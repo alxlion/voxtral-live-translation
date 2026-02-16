@@ -8,7 +8,7 @@ import '../styles/global.css';
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Voxtral Live Translation</title>
   </head>
-  <body class="min-h-screen min-h-dvh flex flex-col bg-base-100 text-base-content">
+  <body class="h-screen h-dvh flex flex-col overflow-hidden bg-base-100 text-base-content">
     <!-- Header -->
     <div class="bg-base-200 border-b border-base-300 px-4 py-2">
       <div class="flex items-center justify-between">
@@ -91,7 +91,10 @@ import '../styles/global.css';
       <!-- Translation panel -->
       <div class="bg-base-200 flex flex-col min-h-0 flex-[3]">
         <div class="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-base-content/40 border-b border-base-300">Translation</div>
-        <div class="flex-1 overflow-y-auto p-3 flex flex-col gap-1 text-4xl font-semibold leading-tight panel-content-translation" id="translationPanel"></div>
+        <div class="relative flex-1 min-h-0">
+          <div class="translation-fade-top"></div>
+          <div class="absolute inset-0 overflow-y-scroll p-3 flex flex-col gap-1 text-4xl font-semibold leading-tight panel-content-translation" id="translationPanel"></div>
+        </div>
       </div>
     </div>
 
@@ -152,6 +155,18 @@ import '../styles/global.css';
       }
       .panel-content-translation p.live {
         @apply text-base-content/70;
+      }
+
+      /* Top fade gradient on translation panel */
+      .translation-fade-top {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3rem;
+        background: linear-gradient(to bottom, oklch(var(--b2)), transparent);
+        z-index: 1;
+        pointer-events: none;
       }
 
       /* Mobile adjustments */
@@ -481,6 +496,43 @@ import '../styles/global.css';
         statusEl.textContent = msg;
         statusEl.style.color = isError ? 'oklch(var(--er))' : '';
       }
+
+      // Debug: Ctrl+Shift+D to simulate transcription segments
+      const fakeSentences = [
+        ["Bonjour, comment allez-vous aujourd'hui?", "Hello, how are you today?"],
+        ["Je suis très content de vous voir.", "I am very happy to see you."],
+        ["Le temps est magnifique ce matin.", "The weather is beautiful this morning."],
+        ["Avez-vous lu le journal aujourd'hui?", "Have you read the newspaper today?"],
+        ["Nous devons partir avant midi.", "We need to leave before noon."],
+        ["La réunion a été reportée à demain.", "The meeting has been postponed to tomorrow."],
+        ["Je voudrais un café s'il vous plaît.", "I would like a coffee please."],
+        ["Il fait vraiment froid dehors.", "It is really cold outside."],
+        ["Elle travaille dans un hôpital.", "She works in a hospital."],
+        ["Les enfants jouent dans le parc.", "The children are playing in the park."],
+        ["Ce restaurant est excellent.", "This restaurant is excellent."],
+        ["Nous avons beaucoup de travail cette semaine.", "We have a lot of work this week."],
+        ["Le train arrive dans cinq minutes.", "The train arrives in five minutes."],
+        ["Je ne comprends pas cette question.", "I don't understand this question."],
+        ["Merci beaucoup pour votre aide.", "Thank you very much for your help."],
+      ];
+
+      document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+          e.preventDefault();
+          for (const [orig, trans] of fakeSentences) {
+            const origP = document.createElement('p');
+            origP.textContent = orig;
+            originalPanel.appendChild(origP);
+
+            const transP = document.createElement('p');
+            transP.textContent = trans;
+            translationPanel.appendChild(transP);
+          }
+          scrollToBottom(originalPanel);
+          scrollToBottom(translationPanel);
+          statusBar.textContent = 'Debug: added fake segments';
+        }
+      });
     </script>
   </body>
 </html>
