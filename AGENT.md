@@ -1,5 +1,13 @@
 # Real-Time Audio Transcription & Translation
 
+## Rules
+
+- **Never run npm/node commands on the host.** Always use Docker:
+  ```bash
+  docker run --rm -v "$PWD":/app -w /app node:22-slim <command>
+  ```
+- **Never add `Co-Authored-By: Claude` to commit messages.**
+
 ## Project Overview
 
 Astro SSR website that captures microphone audio, transcribes it in near-real-time using Mistral's Voxtral API, and translates it using DeepL's free API. Supports French-English bidirectional translation.
