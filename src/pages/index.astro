@@ -346,6 +346,7 @@ import '../styles/global.css';
       updateTtsButton();
 
       ttsBtn.addEventListener('click', () => {
+        unlockTts();
         ttsEnabled = !ttsEnabled;
         localStorage.setItem('tts_enabled', String(ttsEnabled));
         updateTtsButton();
@@ -353,6 +354,16 @@ import '../styles/global.css';
           speechSynthesis.cancel();
         }
       });
+
+      // iOS Safari requires a user-gesture-initiated utterance to unlock speechSynthesis
+      let ttsUnlocked = false;
+      function unlockTts() {
+        if (ttsUnlocked) return;
+        const u = new SpeechSynthesisUtterance('');
+        u.volume = 0;
+        speechSynthesis.speak(u);
+        ttsUnlocked = true;
+      }
 
       function speakText(text: string, lang: string) {
         if (!ttsEnabled) return;
@@ -417,6 +428,7 @@ import '../styles/global.css';
 
       // --- Record button ---
       recordBtn.addEventListener('click', () => {
+        unlockTts();
         if (recording) {
           stopRecording();
         } else {
