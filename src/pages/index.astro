@@ -1,17 +1,471 @@
 ---
-
+import '../styles/global.css';
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Voxtral Live Translation</title>
+  </head>
+  <body class="min-h-screen min-h-dvh flex flex-col bg-base-100 text-base-content">
+    <!-- Navbar -->
+    <div class="navbar bg-base-200 border-b border-base-300 px-4 min-h-0 py-2">
+      <div class="flex-1">
+        <span class="text-lg font-semibold text-base-content">Voxtral Live Translation</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <select class="select select-sm select-bordered w-32" id="sourceLangSelect">
+          <option value="fr">🇫🇷 French</option>
+          <option value="en">🇬🇧 English</option>
+          <option value="zh">🇨🇳 Chinese</option>
+          <option value="es">🇪🇸 Spanish</option>
+          <option value="pt">🇧🇷 Portuguese</option>
+          <option value="ru">🇷🇺 Russian</option>
+          <option value="de">🇩🇪 German</option>
+          <option value="ja">🇯🇵 Japanese</option>
+          <option value="ko">🇰🇷 Korean</option>
+          <option value="it">🇮🇹 Italian</option>
+          <option value="nl">🇳🇱 Dutch</option>
+        </select>
+        <button class="btn btn-sm btn-ghost btn-square" id="swapLangsBtn" title="Swap languages">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+        </button>
+        <select class="select select-sm select-bordered w-32" id="targetLangSelect">
+          <option value="en-US">🇬🇧 English</option>
+          <option value="fr">🇫🇷 French</option>
+          <option value="zh-Hans">🇨🇳 Chinese</option>
+          <option value="es">🇪🇸 Spanish</option>
+          <option value="pt-BR">🇧🇷 Portuguese</option>
+          <option value="ru">🇷🇺 Russian</option>
+          <option value="de">🇩🇪 German</option>
+          <option value="ja">🇯🇵 Japanese</option>
+          <option value="ko">🇰🇷 Korean</option>
+          <option value="it">🇮🇹 Italian</option>
+          <option value="nl">🇳🇱 Dutch</option>
+        </select>
+        <button class="btn btn-sm btn-ghost btn-square" id="settingsBtn" title="API Key Settings">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+            <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <dialog class="modal" id="settingsModal">
+      <div class="modal-box">
+        <h3 class="text-lg font-bold">API Key Settings</h3>
+        <p class="text-sm text-base-content/60 mt-1">Enter your own API keys to use this app. Keys are stored locally in your browser.</p>
+        <div class="form-control mt-4">
+          <label class="label">
+            <span class="label-text">Mistral API Key</span>
+          </label>
+          <input type="password" id="mistralKeyInput" placeholder="Get from console.mistral.ai" autocomplete="off" class="input input-bordered w-full" />
+        </div>
+        <div class="form-control mt-3">
+          <label class="label">
+            <span class="label-text">DeepL API Key</span>
+          </label>
+          <input type="password" id="deeplKeyInput" placeholder="Get from deepl.com/your-account/keys" autocomplete="off" class="input input-bordered w-full" />
+        </div>
+        <div class="modal-action">
+          <button class="btn btn-ghost" id="settingsCancel">Cancel</button>
+          <button class="btn btn-primary" id="settingsSave">Save</button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
+
+    <!-- Panels -->
+    <div class="flex-1 flex flex-col gap-px bg-base-300 min-h-0">
+      <!-- Original panel -->
+      <div class="bg-base-200 flex flex-col min-h-0 flex-1">
+        <div class="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-base-content/40 border-b border-base-300">Original</div>
+        <div class="flex-1 overflow-y-auto p-3 flex flex-col gap-1 panel-content-original" id="originalPanel"></div>
+      </div>
+      <!-- Translation panel -->
+      <div class="bg-base-200 flex flex-col min-h-0 flex-[3]">
+        <div class="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-base-content/40 border-b border-base-300">Translation</div>
+        <div class="flex-1 overflow-y-auto p-3 flex flex-col gap-1 panel-content-translation" id="translationPanel"></div>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div class="text-center text-xs text-base-content/40 py-1 px-4 border-t border-base-300" id="statusBar">Tap mic to start</div>
+
+    <!-- Floating record button -->
+    <button class="btn btn-circle btn-lg btn-primary shadow-xl fixed bottom-8 right-5 z-50" id="recordBtn">
+      <svg class="mic-icon w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+      </svg>
+      <svg class="stop-icon w-6 h-6 hidden" viewBox="0 0 24 24" fill="currentColor">
+        <rect x="6" y="6" width="12" height="12" rx="2"/>
+      </svg>
+    </button>
+    <span class="fixed bottom-11 right-20 text-xs text-base-content/50 z-50 hidden" id="status">Ready</span>
+
+    <style>
+      @reference "../styles/global.css";
+
+      /* Recording state styles */
+      .recording .mic-icon { display: none; }
+      .recording .stop-icon { display: block !important; }
+      .recording {
+        @apply btn-neutral;
+        animation: fab-pulse 1.5s ease-in-out infinite;
+      }
+
+      @keyframes fab-pulse {
+        0%, 100% { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); }
+        50% { box-shadow: 0 4px 20px oklch(var(--p) / 0.4); }
+      }
+
+      /* Panel text styling */
+      .panel-content-original p {
+        @apply text-sm leading-relaxed text-base-content/50;
+      }
+      .panel-content-translation p {
+        @apply text-2xl leading-snug text-base-content font-medium;
+      }
+
+      /* Text states */
+      .panel-content-original p.pending,
+      .panel-content-translation p.pending {
+        @apply text-base-content/20;
+      }
+      .panel-content-original p.error,
+      .panel-content-translation p.error {
+        @apply text-error text-sm;
+      }
+      .panel-content-original p.live,
+      .panel-content-translation p.live {
+        @apply border-l-2 border-success pl-2;
+      }
+      .panel-content-original p.live {
+        @apply text-base-content/60;
+      }
+      .panel-content-translation p.live {
+        @apply text-base-content/70;
+      }
+
+      /* Mobile adjustments */
+      @media (max-width: 600px) {
+        .panel-content-translation p {
+          @apply text-3xl font-semibold;
+        }
+      }
+    </style>
+
+    <script>
+      const recordBtn = document.getElementById('recordBtn')!;
+      const sourceLangSelect = document.getElementById('sourceLangSelect') as HTMLSelectElement;
+      const targetLangSelect = document.getElementById('targetLangSelect') as HTMLSelectElement;
+      const swapLangsBtn = document.getElementById('swapLangsBtn')!;
+      const statusEl = document.getElementById('status')!;
+      const statusBar = document.getElementById('statusBar')!;
+      const originalPanel = document.getElementById('originalPanel')!;
+      const translationPanel = document.getElementById('translationPanel')!;
+      const settingsBtn = document.getElementById('settingsBtn')!;
+      const settingsModal = document.getElementById('settingsModal') as HTMLDialogElement;
+      const mistralKeyInput = document.getElementById('mistralKeyInput') as HTMLInputElement;
+      const deeplKeyInput = document.getElementById('deeplKeyInput') as HTMLInputElement;
+      const settingsSave = document.getElementById('settingsSave')!;
+      const settingsCancel = document.getElementById('settingsCancel')!;
+
+      // --- API Key management ---
+      function getApiKeys() {
+        return {
+          mistral: localStorage.getItem('mistral_api_key') || '',
+          deepl: localStorage.getItem('deepl_api_key') || '',
+        };
+      }
+
+      function hasApiKeys() {
+        const keys = getApiKeys();
+        return keys.mistral.length > 0 && keys.deepl.length > 0;
+      }
+
+      function openSettings() {
+        const keys = getApiKeys();
+        mistralKeyInput.value = keys.mistral;
+        deeplKeyInput.value = keys.deepl;
+        settingsModal.showModal();
+      }
+
+      function closeSettings() {
+        settingsModal.close();
+      }
+
+      settingsBtn.addEventListener('click', openSettings);
+      settingsCancel.addEventListener('click', closeSettings);
+
+      settingsSave.addEventListener('click', () => {
+        const mistralKey = mistralKeyInput.value.trim();
+        const deeplKey = deeplKeyInput.value.trim();
+        if (mistralKey) localStorage.setItem('mistral_api_key', mistralKey);
+        else localStorage.removeItem('mistral_api_key');
+        if (deeplKey) localStorage.setItem('deepl_api_key', deeplKey);
+        else localStorage.removeItem('deepl_api_key');
+        closeSettings();
+        statusBar.textContent = 'API keys saved';
+      });
+
+      // Show settings on first visit if no keys are stored
+      if (!hasApiKeys()) {
+        openSettings();
+      }
+
+      let stream: MediaStream | null = null;
+      let recording = false;
+
+      // Language mapping: source code -> target code for swap
+      const sourceToTarget: Record<string, string> = {
+        'fr': 'fr', 'en': 'en-US', 'zh': 'zh-Hans',
+        'es': 'es', 'pt': 'pt-BR', 'ru': 'ru',
+        'de': 'de', 'ja': 'ja', 'ko': 'ko', 'it': 'it', 'nl': 'nl',
+      };
+      const targetToSource: Record<string, string> = {
+        'fr': 'fr', 'en-US': 'en', 'zh-Hans': 'zh',
+        'es': 'es', 'pt-BR': 'pt', 'ru': 'ru',
+        'de': 'de', 'ja': 'ja', 'ko': 'ko', 'it': 'it', 'nl': 'nl',
+      };
+
+      // Realtime state
+      let ws: WebSocket | null = null;
+      let audioContext: AudioContext | null = null;
+      let workletNode: AudioWorkletNode | null = null;
+      let sourceNode: MediaStreamAudioSourceNode | null = null;
+      let liveOrigP: HTMLParagraphElement | null = null;
+      let liveTransP: HTMLParagraphElement | null = null;
+      let liveTranslateTimer: ReturnType<typeof setTimeout> | null = null;
+
+      // --- Language selection ---
+      swapLangsBtn.addEventListener('click', () => {
+        const oldSource = sourceLangSelect.value;
+        const oldTarget = targetLangSelect.value;
+        const newSource = targetToSource[oldTarget] || oldTarget;
+        const newTarget = sourceToTarget[oldSource] || oldSource;
+        sourceLangSelect.value = newSource;
+        targetLangSelect.value = newTarget;
+      });
+
+      // --- Record button ---
+      recordBtn.addEventListener('click', () => {
+        if (recording) {
+          stopRecording();
+        } else {
+          startRecording();
+        }
+      });
+
+      async function startRecording() {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+          });
+        } catch {
+          setStatus('Microphone access denied', true);
+          return;
+        }
+
+        recording = true;
+        recordBtn.classList.add('recording');
+        statusEl.style.display = 'block';
+        setStatus('Listening...');
+        statusBar.textContent = 'Connecting to realtime transcription...';
+
+        // Set up AudioWorklet for PCM capture
+        audioContext = new AudioContext();
+        await audioContext.audioWorklet.addModule('/pcm-processor.js');
+        sourceNode = audioContext.createMediaStreamSource(stream);
+        workletNode = new AudioWorkletNode(audioContext, 'pcm-processor');
+
+        // Silent output so worklet keeps processing
+        const silentGain = audioContext.createGain();
+        silentGain.gain.value = 0;
+        sourceNode.connect(workletNode);
+        workletNode.connect(silentGain);
+        silentGain.connect(audioContext.destination);
+
+        // Connect WebSocket
+        const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        ws = new WebSocket(`${protocol}//${location.host}/ws/transcribe`);
+        ws.binaryType = 'arraybuffer';
+
+        ws.onopen = () => {
+          const keys = getApiKeys();
+          ws!.send(JSON.stringify({ type: 'start', apiKey: keys.mistral || undefined, language: sourceLangSelect.value }));
+        };
+
+        ws.onmessage = (event) => {
+          const msg = JSON.parse(event.data);
+          handleRealtimeEvent(msg);
+        };
+
+        ws.onerror = () => {
+          setStatus('WebSocket error', true);
+        };
+
+        ws.onclose = () => {
+          if (recording) {
+            setStatus('Connection lost', true);
+            stopRecording();
+          }
+        };
+
+        // Forward PCM audio to server
+        workletNode.port.onmessage = (event) => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(event.data);
+          }
+        };
+      }
+
+      function stopRecording() {
+        recording = false;
+
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'stop' }));
+          setTimeout(() => { ws?.close(); ws = null; }, 2000);
+        }
+        if (liveTranslateTimer) { clearTimeout(liveTranslateTimer); liveTranslateTimer = null; }
+        if (workletNode) { workletNode.disconnect(); workletNode = null; }
+        if (sourceNode) { sourceNode.disconnect(); sourceNode = null; }
+        if (audioContext) { audioContext.close(); audioContext = null; }
+        liveOrigP = null;
+        liveTransP = null;
+
+        if (stream) {
+          stream.getTracks().forEach((t) => t.stop());
+          stream = null;
+        }
+        recordBtn.classList.remove('recording');
+        statusEl.style.display = 'none';
+        setStatus('Ready');
+        statusBar.textContent = 'Recording stopped';
+      }
+
+      function handleRealtimeEvent(msg: any) {
+        switch (msg.type) {
+          case 'session.ready':
+            setStatus('Listening...');
+            statusBar.textContent = 'Realtime transcription active — speak now';
+            break;
+
+          case 'transcription.text.delta':
+            if (!liveOrigP) {
+              liveOrigP = document.createElement('p');
+              liveOrigP.classList.add('live');
+              originalPanel.appendChild(liveOrigP);
+              liveTransP = document.createElement('p');
+              liveTransP.classList.add('pending', 'live');
+              liveTransP.textContent = '...';
+              translationPanel.appendChild(liveTransP);
+            }
+            liveOrigP.textContent += msg.text;
+            scrollToBottom(originalPanel);
+            // Debounced live translation
+            if (liveTranslateTimer) clearTimeout(liveTranslateTimer);
+            liveTranslateTimer = setTimeout(() => {
+              const text = liveOrigP?.textContent;
+              if (text && text.trim() && liveTransP) {
+                translateAndDisplay(text, liveTransP, true);
+              }
+            }, 500);
+            break;
+
+          case 'transcription.segment': {
+            if (liveTranslateTimer) { clearTimeout(liveTranslateTimer); liveTranslateTimer = null; }
+            const segOrigP = liveOrigP || document.createElement('p');
+            segOrigP.textContent = msg.text;
+            segOrigP.classList.remove('live');
+            if (!liveOrigP) originalPanel.appendChild(segOrigP);
+
+            const segTransP = liveTransP || document.createElement('p');
+            if (!liveTransP) {
+              segTransP.classList.add('pending');
+              segTransP.textContent = '...';
+              translationPanel.appendChild(segTransP);
+            }
+
+            if (msg.text && msg.text.trim()) {
+              translateAndDisplay(msg.text, segTransP);
+            } else {
+              segTransP.textContent = '';
+              segTransP.classList.remove('pending', 'live');
+            }
+            liveOrigP = null;
+            liveTransP = null;
+            scrollToBottom(originalPanel);
+            break;
+          }
+
+          case 'transcription.done':
+            if (liveOrigP && msg.text) {
+              liveOrigP.textContent = msg.text;
+              liveOrigP.classList.remove('live');
+              if (msg.text.trim() && liveTransP) {
+                translateAndDisplay(msg.text, liveTransP);
+              }
+            }
+            liveOrigP = null;
+            liveTransP = null;
+            break;
+
+          case 'transcription.language':
+            statusBar.textContent = `Detected language: ${msg.audioLanguage}`;
+            break;
+
+          case 'error':
+            setStatus('Transcription error', true);
+            statusBar.textContent = msg.error?.message || 'Unknown error';
+            break;
+        }
+      }
+
+      async function translateAndDisplay(text: string, transP: HTMLParagraphElement, live = false) {
+        try {
+          const keys = getApiKeys();
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (keys.deepl) headers['x-deepl-key'] = keys.deepl;
+          const res = await fetch('/api/translate', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              text,
+              sourceLang: sourceLangSelect.value,
+              targetLang: targetLangSelect.value,
+            }),
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'Translation failed');
+          }
+          const { translatedText } = await res.json();
+          transP.textContent = translatedText;
+          if (!live) {
+            transP.classList.remove('pending', 'live');
+          }
+          scrollToBottom(translationPanel);
+        } catch (err: any) {
+          transP.textContent = err.message;
+          transP.classList.remove('pending', 'live');
+          transP.classList.add('error');
+        }
+      }
+
+      function scrollToBottom(el: HTMLElement) {
+        el.scrollTop = el.scrollHeight;
+      }
+
+      function setStatus(msg: string, isError = false) {
+        statusEl.textContent = msg;
+        statusEl.style.color = isError ? 'oklch(var(--er))' : '';
+      }
+    </script>
+  </body>
 </html>
