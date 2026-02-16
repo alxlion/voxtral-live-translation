@@ -48,6 +48,7 @@ import '../styles/global.css';
           <option value="ko">🇰🇷 Korean</option>
           <option value="it">🇮🇹 Italian</option>
           <option value="nl">🇳🇱 Dutch</option>
+          <option value="vi">🇻🇳 Vietnamese</option>
         </select>
       </div>
     </div>
@@ -55,8 +56,8 @@ import '../styles/global.css';
     <!-- Settings Modal -->
     <dialog class="modal" id="settingsModal">
       <div class="modal-box">
-        <h3 class="text-lg font-bold">API Key Settings</h3>
-        <p class="text-sm text-base-content/60 mt-1">Enter your own API keys to use this app. Keys are stored locally in your browser.</p>
+        <h3 class="text-lg font-bold">Settings</h3>
+        <p class="text-sm text-base-content/60 mt-1">Keys are stored locally in your browser.</p>
         <div class="form-control mt-4">
           <label class="label">
             <span class="label-text">Mistral API Key</span>
@@ -70,6 +71,13 @@ import '../styles/global.css';
             <a href="https://www.deepl.com/en/your-account/keys" target="_blank" rel="noopener" class="label-text-alt link link-primary">Get key</a>
           </label>
           <input type="password" id="deeplKeyInput" placeholder="Get from deepl.com/your-account/keys" autocomplete="off" class="input input-bordered w-full" />
+        </div>
+        <div class="form-control mt-4">
+          <label class="label">
+            <span class="label-text">TTS Speed</span>
+            <span class="label-text-alt" id="ttsSpeedValue">1.2x</span>
+          </label>
+          <input type="range" id="ttsSpeedInput" min="0.5" max="2" step="0.1" value="1.2" class="range range-sm" />
         </div>
         <div class="modal-action">
           <button class="btn btn-ghost" id="settingsCancel">Cancel</button>
@@ -101,6 +109,16 @@ import '../styles/global.css';
     <!-- Status bar -->
     <div class="text-center text-xs text-base-content/40 py-1 px-4 border-t border-base-300" id="statusBar">Tap mic to start</div>
 
+    <!-- Floating TTS toggle button -->
+    <button class="btn btn-circle btn-sm shadow-lg fixed bottom-10 right-20 z-50 btn-ghost opacity-50" id="ttsBtn" title="Toggle text-to-speech">
+      <svg class="tts-on-icon w-5 h-5 hidden" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+      </svg>
+      <svg class="tts-off-icon w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+      </svg>
+    </button>
+
     <!-- Floating record button -->
     <button class="btn btn-circle btn-lg btn-primary shadow-xl fixed bottom-8 right-5 z-50" id="recordBtn">
       <svg class="mic-icon w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
@@ -111,7 +129,6 @@ import '../styles/global.css';
         <rect x="6" y="6" width="12" height="12" rx="2"/>
       </svg>
     </button>
-    <span class="fixed bottom-11 right-20 text-xs text-base-content/50 z-50 hidden" id="status">Ready</span>
 
     <style>
       @reference "../styles/global.css";
@@ -169,6 +186,13 @@ import '../styles/global.css';
         pointer-events: none;
       }
 
+      /* TTS button states */
+      #ttsBtn.tts-active {
+        @apply btn-primary opacity-100;
+      }
+      #ttsBtn.tts-active .tts-on-icon { display: block !important; }
+      #ttsBtn.tts-active .tts-off-icon { display: none !important; }
+
       /* Mobile adjustments */
       @media (max-width: 600px) {
         .panel-content-translation {
@@ -182,7 +206,6 @@ import '../styles/global.css';
       const sourceLangSelect = document.getElementById('sourceLangSelect') as HTMLSelectElement;
       const targetLangSelect = document.getElementById('targetLangSelect') as HTMLSelectElement;
       const swapLangsBtn = document.getElementById('swapLangsBtn')!;
-      const statusEl = document.getElementById('status')!;
       const statusBar = document.getElementById('statusBar')!;
       const originalPanel = document.getElementById('originalPanel')!;
       const translationPanel = document.getElementById('translationPanel')!;
@@ -192,6 +215,9 @@ import '../styles/global.css';
       const deeplKeyInput = document.getElementById('deeplKeyInput') as HTMLInputElement;
       const settingsSave = document.getElementById('settingsSave')!;
       const settingsCancel = document.getElementById('settingsCancel')!;
+      const ttsBtn = document.getElementById('ttsBtn')!;
+      const ttsSpeedInput = document.getElementById('ttsSpeedInput') as HTMLInputElement;
+      const ttsSpeedValue = document.getElementById('ttsSpeedValue')!;
 
       // --- API Key management ---
       function getApiKeys() {
@@ -206,10 +232,21 @@ import '../styles/global.css';
         return keys.mistral.length > 0 && keys.deepl.length > 0;
       }
 
+      let ttsSpeed = parseFloat(localStorage.getItem('tts_speed') || '1.2');
+
+      function updateSpeedLabel() {
+        ttsSpeedValue.textContent = `${ttsSpeedInput.value}x`;
+      }
+      ttsSpeedInput.value = String(ttsSpeed);
+      updateSpeedLabel();
+      ttsSpeedInput.addEventListener('input', updateSpeedLabel);
+
       function openSettings() {
         const keys = getApiKeys();
         mistralKeyInput.value = keys.mistral;
         deeplKeyInput.value = keys.deepl;
+        ttsSpeedInput.value = String(ttsSpeed);
+        updateSpeedLabel();
         settingsModal.showModal();
       }
 
@@ -227,13 +264,93 @@ import '../styles/global.css';
         else localStorage.removeItem('mistral_api_key');
         if (deeplKey) localStorage.setItem('deepl_api_key', deeplKey);
         else localStorage.removeItem('deepl_api_key');
+        ttsSpeed = parseFloat(ttsSpeedInput.value);
+        localStorage.setItem('tts_speed', String(ttsSpeed));
         closeSettings();
-        statusBar.textContent = 'API keys saved';
+        statusBar.textContent = 'Settings saved';
+        updateRecordBtn();
       });
 
-      // Show settings on first visit if no keys are stored
-      if (!hasApiKeys()) {
-        openSettings();
+      let serverHasKeys = false;
+
+      function updateRecordBtn() {
+        const hasKeys = hasApiKeys() || serverHasKeys;
+        const disabled = !hasKeys || !sourceLangSelect.value || !targetLangSelect.value;
+        recordBtn.toggleAttribute('disabled', disabled);
+      }
+      updateRecordBtn();
+
+      // Check if server has env-level API keys
+      fetch('/api/keys-status').then(r => r.json()).then(status => {
+        serverHasKeys = status.mistral && status.deepl;
+        updateRecordBtn();
+        // Show settings on first visit if no keys anywhere
+        if (!hasApiKeys() && !serverHasKeys) {
+          openSettings();
+        }
+      }).catch(() => {
+        // Fetch failed — fall back to showing settings if no local keys
+        if (!hasApiKeys()) {
+          openSettings();
+        }
+      });
+
+      // --- TTS (Text-to-Speech) ---
+      let ttsEnabled = localStorage.getItem('tts_enabled') === 'true';
+
+      // Map DeepL target codes to BCP-47 tags for Web Speech API
+      const ttsBcp47: Record<string, string> = {
+        'en-US': 'en-US', 'fr': 'fr-FR', 'zh-Hans': 'zh-CN',
+        'es': 'es-ES', 'pt-BR': 'pt-BR', 'ru': 'ru-RU',
+        'de': 'de-DE', 'ja': 'ja-JP', 'ko': 'ko-KR',
+        'it': 'it-IT', 'nl': 'nl-NL', 'vi': 'vi-VN',
+      };
+
+      // Cache available voices, keyed by BCP-47 prefix
+      let voices: SpeechSynthesisVoice[] = [];
+      function loadVoices() {
+        voices = speechSynthesis.getVoices();
+      }
+      loadVoices();
+      speechSynthesis.addEventListener('voiceschanged', loadVoices);
+
+      function findVoice(bcp47: string): SpeechSynthesisVoice | undefined {
+        // Exact match first (e.g. "fr-FR")
+        let v = voices.find(v => v.lang === bcp47);
+        if (v) return v;
+        // Prefix match (e.g. "fr-FR" matches voice with lang "fr")
+        const prefix = bcp47.split('-')[0];
+        return voices.find(v => v.lang.startsWith(prefix));
+      }
+
+      function updateTtsButton() {
+        if (ttsEnabled) {
+          ttsBtn.classList.add('tts-active');
+        } else {
+          ttsBtn.classList.remove('tts-active');
+        }
+      }
+      updateTtsButton();
+
+      ttsBtn.addEventListener('click', () => {
+        ttsEnabled = !ttsEnabled;
+        localStorage.setItem('tts_enabled', String(ttsEnabled));
+        updateTtsButton();
+        if (!ttsEnabled) {
+          speechSynthesis.cancel();
+        }
+      });
+
+      function speakText(text: string, lang: string) {
+        if (!ttsEnabled) return;
+        const bcp47 = ttsBcp47[lang] || lang;
+        const voice = findVoice(bcp47);
+        if (!voice) return;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.voice = voice;
+        utterance.lang = bcp47;
+        utterance.rate = ttsSpeed;
+        speechSynthesis.speak(utterance);
       }
 
       let stream: MediaStream | null = null;
@@ -259,6 +376,7 @@ import '../styles/global.css';
       let liveOrigP: HTMLParagraphElement | null = null;
       let liveTransP: HTMLParagraphElement | null = null;
       let liveTranslateTimer: ReturnType<typeof setTimeout> | null = null;
+      let finalizeTimer: ReturnType<typeof setTimeout> | null = null;
 
       // --- Language selection ---
       const savedSource = localStorage.getItem('source_lang');
@@ -269,6 +387,7 @@ import '../styles/global.css';
       function saveLangSelection() {
         localStorage.setItem('source_lang', sourceLangSelect.value);
         localStorage.setItem('target_lang', targetLangSelect.value);
+        updateRecordBtn();
       }
       sourceLangSelect.addEventListener('change', saveLangSelection);
       targetLangSelect.addEventListener('change', saveLangSelection);
@@ -298,14 +417,12 @@ import '../styles/global.css';
             audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
           });
         } catch {
-          setStatus('Microphone access denied', true);
+          statusBar.textContent = 'Microphone access denied';
           return;
         }
 
         recording = true;
         recordBtn.classList.add('recording');
-        statusEl.style.display = 'block';
-        setStatus('Listening...');
         statusBar.textContent = 'Connecting to realtime transcription...';
 
         // Set up AudioWorklet for PCM capture
@@ -337,12 +454,12 @@ import '../styles/global.css';
         };
 
         ws.onerror = () => {
-          setStatus('WebSocket error', true);
+          statusBar.textContent = 'WebSocket error';
         };
 
         ws.onclose = () => {
           if (recording) {
-            setStatus('Connection lost', true);
+            statusBar.textContent = 'Connection lost';
             stopRecording();
           }
         };
@@ -357,12 +474,14 @@ import '../styles/global.css';
 
       function stopRecording() {
         recording = false;
+        speechSynthesis.cancel();
 
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'stop' }));
           setTimeout(() => { ws?.close(); ws = null; }, 2000);
         }
         if (liveTranslateTimer) { clearTimeout(liveTranslateTimer); liveTranslateTimer = null; }
+        if (finalizeTimer) { clearTimeout(finalizeTimer); finalizeTimer = null; }
         if (workletNode) { workletNode.disconnect(); workletNode = null; }
         if (sourceNode) { sourceNode.disconnect(); sourceNode = null; }
         if (audioContext) { audioContext.close(); audioContext = null; }
@@ -374,15 +493,13 @@ import '../styles/global.css';
           stream = null;
         }
         recordBtn.classList.remove('recording');
-        statusEl.style.display = 'none';
-        setStatus('Ready');
         statusBar.textContent = 'Recording stopped';
       }
 
       function handleRealtimeEvent(msg: any) {
         switch (msg.type) {
           case 'session.ready':
-            setStatus('Listening...');
+            statusBar.textContent = 'Listening...';
             statusBar.textContent = 'Realtime transcription active — speak now';
             break;
 
@@ -398,7 +515,7 @@ import '../styles/global.css';
             }
             liveOrigP.textContent += msg.text;
             scrollToBottom(originalPanel);
-            // Debounced live translation
+            // Debounced live translation (fast, preview only)
             if (liveTranslateTimer) clearTimeout(liveTranslateTimer);
             liveTranslateTimer = setTimeout(() => {
               const text = liveOrigP?.textContent;
@@ -406,10 +523,26 @@ import '../styles/global.css';
                 translateAndDisplay(text, liveTransP, true);
               }
             }, 500);
+            // Finalize after 1.5s of silence (triggers TTS)
+            if (finalizeTimer) clearTimeout(finalizeTimer);
+            finalizeTimer = setTimeout(() => {
+              if (liveOrigP && liveTransP) {
+                if (liveTranslateTimer) { clearTimeout(liveTranslateTimer); liveTranslateTimer = null; }
+                const text = liveOrigP.textContent;
+                liveOrigP.classList.remove('live');
+                liveTransP.classList.remove('live');
+                if (text && text.trim()) {
+                  translateAndDisplay(text, liveTransP, false);
+                }
+                liveOrigP = null;
+                liveTransP = null;
+              }
+            }, 800);
             break;
 
           case 'transcription.segment': {
             if (liveTranslateTimer) { clearTimeout(liveTranslateTimer); liveTranslateTimer = null; }
+            if (finalizeTimer) { clearTimeout(finalizeTimer); finalizeTimer = null; }
             const segOrigP = liveOrigP || document.createElement('p');
             segOrigP.textContent = msg.text;
             segOrigP.classList.remove('live');
@@ -435,6 +568,7 @@ import '../styles/global.css';
           }
 
           case 'transcription.done':
+            if (finalizeTimer) { clearTimeout(finalizeTimer); finalizeTimer = null; }
             if (liveOrigP && msg.text) {
               liveOrigP.textContent = msg.text;
               liveOrigP.classList.remove('live');
@@ -451,7 +585,7 @@ import '../styles/global.css';
             break;
 
           case 'error':
-            setStatus('Transcription error', true);
+            statusBar.textContent = 'Transcription error';
             statusBar.textContent = msg.error?.message || 'Unknown error';
             break;
         }
@@ -479,6 +613,7 @@ import '../styles/global.css';
           transP.textContent = translatedText;
           if (!live) {
             transP.classList.remove('pending', 'live');
+            speakText(translatedText, targetLangSelect.value);
           }
           scrollToBottom(translationPanel);
         } catch (err: any) {
@@ -492,10 +627,6 @@ import '../styles/global.css';
         el.scrollTop = el.scrollHeight;
       }
 
-      function setStatus(msg: string, isError = false) {
-        statusEl.textContent = msg;
-        statusEl.style.color = isError ? 'oklch(var(--er))' : '';
-      }
 
       // Debug: Ctrl+Shift+D to simulate transcription segments
       const fakeSentences = [
@@ -527,6 +658,8 @@ import '../styles/global.css';
             const transP = document.createElement('p');
             transP.textContent = trans;
             translationPanel.appendChild(transP);
+
+            speakText(trans, targetLangSelect.value);
           }
           scrollToBottom(originalPanel);
           scrollToBottom(translationPanel);
