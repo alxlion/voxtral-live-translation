@@ -246,6 +246,18 @@ import '../styles/global.css';
       let liveTranslateTimer: ReturnType<typeof setTimeout> | null = null;
 
       // --- Language selection ---
+      const savedSource = localStorage.getItem('source_lang');
+      const savedTarget = localStorage.getItem('target_lang');
+      if (savedSource) sourceLangSelect.value = savedSource;
+      if (savedTarget) targetLangSelect.value = savedTarget;
+
+      function saveLangSelection() {
+        localStorage.setItem('source_lang', sourceLangSelect.value);
+        localStorage.setItem('target_lang', targetLangSelect.value);
+      }
+      sourceLangSelect.addEventListener('change', saveLangSelection);
+      targetLangSelect.addEventListener('change', saveLangSelection);
+
       swapLangsBtn.addEventListener('click', () => {
         const oldSource = sourceLangSelect.value;
         const oldTarget = targetLangSelect.value;
@@ -253,6 +265,7 @@ import '../styles/global.css';
         const newTarget = sourceToTarget[oldSource] || oldSource;
         sourceLangSelect.value = newSource;
         targetLangSelect.value = newTarget;
+        saveLangSelection();
       });
 
       // --- Record button ---
